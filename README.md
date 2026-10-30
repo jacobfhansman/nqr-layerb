@@ -22,4 +22,4 @@ This creates a private environment in '.venv' inside this folder, installs the p
 | Check 3a: solenoid axis field = sum of loops | 1.25e-15  | 1.0e-12 | PASS     |         |
 | Check 3b: loop field near axis vs textbook   | 1.99e-04  | 5.0e-03 | PASS     |         |
 | Check 3b: loop field near axis vs textbook   | 2.00e-06  | 5.0e-03 | PASS     |         |
-| Check 3c: convergence order,                 | slope + 2 |         | 4.49e-03 | 1.0e-01 | PASS | fitted slope = -1.996 |
+| Check 3c: convergence order, slope +2        | 4.49e-03  | 1.0e-01 | PASS     | fitted slope = -1.996 |
