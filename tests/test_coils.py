@@ -100,7 +100,7 @@ def test_check3a_solenoid_axis_is_sum_of_loops(record_check): #code test
 def test_check3b_solenoid_center_vs_sheet(turns, record_check): #physics test
     Bc = Solenoid(sol_A, sol_L, turns).field_local([[0.0, 0.0, 0.0]])[0,2]
     limit = 5e-3
-    err = record_check("Check 3b: loop field near axis vs textbook", rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)), limit)
+    err = record_check("Check 3b: (N=20,200) field near axis vs textbook", rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)), limit)
     #assert rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)) < 5e-3
 def test_check3c_convergence_order(record_check): #testing difference for different number of turns
     Ns = np.array([10,20,40,80,160])
