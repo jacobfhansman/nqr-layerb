@@ -95,13 +95,15 @@ def test_check3a_solenoid_axis_is_sum_of_loops(record_check): #code test
     expected = sum(loop_on_axis_Bz(sol_A, z - zj) for zj in sol.z_loops)
     limit = 1e-12
     err = record_check("Check 3a: solenoid axis field = sum of loops", rel_err(sol.field_local(axis_points(z))[:,2],expected), limit)
+    assert err < limit
     #assert rel_err(sol.field_local(axis_points(z))[:,2],expected) < 1e-12
 @pytest.mark.parametrize("turns", [20,200])#run below for 20 and 200
 def test_check3b_solenoid_center_vs_sheet(turns, record_check): #physics test
     Bc = Solenoid(sol_A, sol_L, turns).field_local([[0.0, 0.0, 0.0]])[0,2]
     limit = 5e-3
-    err = record_check("Check 3b: (N=20,200) field near axis vs textbook", rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)), limit)
+    err = record_check(f"Check 3b: N={turns} field near axis vs finite sheet eq", rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)), limit)
     #assert rel_err(Bc, solenoid_center_Bz_sheet(sol_A, sol_L, turns)) < 5e-3
+    assert err < limit
 def test_check3c_convergence_order(record_check): #testing difference for different number of turns
     Ns = np.array([10,20,40,80,160])
     limit = 0.1
