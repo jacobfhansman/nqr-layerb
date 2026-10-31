@@ -13,7 +13,7 @@ class VoxelSample:
         self.centers = np.atleast_2d(np.asarray(centers, dtype=float))
         self.dV = float(dV)
         n = len(self.centers)
-        self.density = np.ones(n) if density is None else np.broadcast_to(npasarray(density, dtype=float), (n,)).copy()
+        self.density = np.ones(n) if density is None else np.broadcast_to(np.asarray(density, dtype=float), (n,)).copy()
     def __len__(self):
         return len(self.centers)
     @property
