@@ -34,4 +34,16 @@ def off_axis_points(a):
     near = np.column_stack([ring_rho * np.cos(1.1), ring_rho*np.sin(1.1), 0.1*a*np.sin(t)])
     return np.vstack([grid, near])
 
+#Magnetic flux of a point dipole  at r0 through a loop of radius a (plane z = 0)
+#Uses flux = cloosed-loop intergral of a dipole's vector potential around the wire:
+# A(r) = mu0/4pi * m x (r - r0) / |r - r0|^3
+def dipole_flux_through_loop(a, r0, m, n_nodes=8192):
+    phi = np.linspace(0.0,2.0*np.pi, n_nodes, endpoint=False)
+    dphi = 2.0*np.pi / n_nodes
+    zeros = np.zeros(n_nodes)
+    wire = np.column_stack([a*np.cos(phi), a*np.sin(phi), zeros])
+    dl = np.column_stack([-a*np.sin(phi), a*np.cos(phi), zeros])*dphi
+    d = wire - np.asarray(r0, dtype=float)
+    A = mu_0 / (4.0*np.pi)*np.cross(np.asarray(m,dtype=float), d) / (np.linalg.norm(d,axis=1)**3)[:,None]
+    return np.sum(A*dl)
     

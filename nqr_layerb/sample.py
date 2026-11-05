@@ -13,8 +13,8 @@ class VoxelSample:
         self.centers = np.atleast_2d(np.asarray(centers, dtype=float))
         self.dV = float(dV)
         n = len(self.centers)
-        self.density = np.ones(n) if density is None else np.broadcast_to(np.asarray(density, dtype=float), (n,)).copy()
-    def __len__(self):
+        self.density = np.ones(n) if density is None else np.broadcast_to(np.asarray(density, dtype=float), (n,)).copy() #broadcast_to() lets the voxel density be either
+    def __len__(self):                                                                                                   #one number / value per voxel. Use .copy() for any later edit
         return len(self.centers)
     @property
     def volume(self):
@@ -24,7 +24,7 @@ class VoxelSample:
     def slab(cls, size_x, size_y, depth, voxel, center_xy=(0.0,0.0)):
         nx,ny,nz = (int(round(s/voxel)) for s in (size_x, size_y, depth))
         x = center_xy[0] - size_x / 2 + (np.arange(nx) + 0.5) * voxel
-        y = center_xy[1] - size_x / 2 + (np.arange(ny) + 0.5) * voxel
+        y = center_xy[1] - size_y / 2 + (np.arange(ny) + 0.5) * voxel
         z = -(np.arange(nz) + 0.5)*voxel
         X, Y, Z = np.meshgrid(x,y,z,indexing="ij")
         centers = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])

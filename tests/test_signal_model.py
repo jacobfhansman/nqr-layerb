@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from scipy.optimize import brentq, minimize_scalar #brentq finds a root, min scalar finds minimum of a 1 variable function inside an interval
 from scipy.special import jv
-
-from nqr_layerb import powder_response
+from nqr_layerb import powder_response, Loop, Solenoid, VoxelSample, coil_rotation, received_signal
+from reference_B import dipole_flux_through_loop
 
 #This tests whether the signal function matches the direct equation
 def test_check4_identity(record_check):
@@ -44,7 +44,7 @@ def test_check4_zero_and_minimum(record_check):
 def test_check4_powder_average_monte_carlo(record_check):
     rng = np.random.default_rng(0)
     v = rng.normal(size=(200_000,3))
-    u = v[:,2] / np.lingalg.norm(v, axis=1)
+    u = v[:,2] / np.linalg.norm(v, axis=1)
     worst = 0.0
     for alpha in (0.5, 2.0816, 4.0, 6.0):
         samples = u*np.sin(alpha*u)
@@ -54,4 +54,35 @@ def test_check4_powder_average_monte_carlo(record_check):
     err = record_check("Check 4d: MC powder average vs signal model (std errors)", worst, limit, note="worst of 4 ex flip angles")
     assert err < limit
 
+@pytest.mark.parametrize("r0, m", [([0.0,0.0,0.01], [0.0,0.0,1.0]), ([0.015,0.004,0.008], [0.3,-0.5,0.8]), ([0.04,0.0,-0.02],[1.0,0.0,0.0])])
+def test_reciprocity(r0, m, record_check): #tests flux of a dipole through a loop equals B1(r0)
+    a = 0.025
+    flux = dipole_flux_through_loop(a, r0, m)
+    predicted = Loop(a).field_local([r0])[0]@np.asarray(m)
+    limit = 1e-2
+    err = record_check(f"Reciprocity at r0 = {r0}", abs(flux/predicted - 1), limit)
+    assert err < limit
+
+def test_flip_angle_reference_point(record_check): #A single sample volume element placed at r_ref should see exactly alpha_ref
+    a = 0.025
+    voxel = VoxelSample([[0.0,0.0,a]], dV=1e-9)
+    alpha_ref = np.radians(73.0)
+    S = received_signal(Loop(a), voxel, alpha_ref, [0.0,0.0,a])
+    B = Loop(a).field_magnitude_local([[0.0,0.0,a]])[0]
+    limit = 1e-12
+    err = record_check("Signal model: voxel at r_ref sees alpha_ref, relative error", abs(S/(B*powder_response(alpha_ref)*1e-9)-1.0), limit)
+    assert err < limit
+
+#for check 5: test everything at once
+#Near solenoid center the field is nearly uniform so every sample volume element sees almost exactly a_ref
+#and S is proportional to f(a_ref) so the peak must then sit where f peaks.
+#This can only come out to true if the B field code, the sample volume elements' sum, the flip angle scaling and f are all correct
+def test_check5_uniform_field_limit(record_check):
+    sol = Solenoid(0.010,0.040,20)
+    small =VoxelSample.cylinder(0.002,0.004,0.00025)
+    res = minimize_scalar(lambda x: -received_signal(sol, small, x, [0.0,0.0,0.0]), bounds=(1.5,2.6),method="bounded", options={"xatol": 1e-8})
+    peakdeg = np.degrees(res.x)
+    limit =2.0 #max allowed 2 degree off
+    err = record_check("Check 5: solenoid peak vs. 119.27 deg", abs(peakdeg - 119.27), limit, note=f"peak at {peakdeg: .2f} deg")
+    assert err < limit
 
