@@ -19,19 +19,19 @@ venv_dir = root / ".venv"
 def venv_python():
     if os.name == "nt":
         return venv_dir / "Scripts" / "python.exe"
-    return venv_dir / "bin" / "python"
+    return venv_dir / "bin" / "python" #define virt env
 
 def main():
-    if sys.version_info < minpython:
+    if sys.version_info < minpython: #if no python
         sys.exit(f"Python 3.11 or newer is required"
                  f"(found {sys.version.split()[0]}).")
         
     if not venv_python().exists():
-        print(f"Creating virtual environment in {venv_dir}")
+        print(f"Creating virtual environment in {venv_dir}") #create virt env
         venv.create(venv_dir, with_pip=True)
 
     py = str(venv_python())
-    print("Installing pinned packages from the requirements.txt")
+    print("Installing pinned packages from the requirements.txt") #install required packages
     subprocess.run([py, "-m", "pip", "install", "--quiet", "-r", str(root / "requirements.txt")], check=True)
 
     print("Running checks")
