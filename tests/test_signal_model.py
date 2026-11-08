@@ -34,7 +34,7 @@ def test_check4_zero_and_minimum(record_check):
     res = minimize_scalar(powder_response, bounds=(4.5, 7.0), method="bounded")
     min_deg = np.degrees(res.x)
     err_zero = record_check("Check 4c: f zero vs 257.45deg", abs(zero_deg - 257.45), 0.1, note=f"minimum at {min_deg: .2f}deg")
-    err_loc = record_check("Check 4c: f minimum location vs 340.4 deg (deg)", abs(min_deg - 340.4), 0.1,  note=f"minimum at {min_deg:.2f} deg")
+    err_loc = record_check("Check 4c: f minimum location vs 340.4 deg", abs(min_deg - 340.4), 0.1,  note=f"minimum at {min_deg:.2f} deg")
     err_val = record_check("Check 4c: f minimum vs -0.168", abs(res.fun + 0.168), 1e-3, note=f"minimum {res.fun:.4f}")
     assert err_zero < 0.1
     assert err_loc < 0.1
