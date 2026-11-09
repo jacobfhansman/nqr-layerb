@@ -23,7 +23,7 @@ class Placement: #see above comment block for description
         self.top = sample.top #defining the sample's top face
         half = 0.5*sample.dV**(1.0/3.0) #defines half a voxel edge for defining collisions between coil and sample
         self.box_lo = sample.centers.min(axis=0) - half
-        self.box_hi = sample.centers.max(axis=0) - half #for collisions / bounding box
+        self.box_hi = sample.centers.max(axis=0) + half #for collisions / bounding box
 
     def signal_pose(self, position, R):#see comment block above
         return received_signal(self.coil, self.sample, self.alpha_ref, self.r_ref, position=position, R=R, wire_radius=self.wire_radius)
@@ -59,7 +59,7 @@ class Placement: #see above comment block for description
         for k, rot in enumerate((rot_x, rot_y, rot_z)):
             e = np.eye(3)[k]
             g[k] = (self.signal_pose(p+dp*e, R) - self.signal_pose(p-dp*e, R)) / (2*dp)
-            g[3+k] = (self.signal_pose(p, rot(dw)@R) - self.signal_pose(p, rot(-dw@R))) / (2.0*dw)
+            g[3+k] = (self.signal_pose(p, rot(dw)@R) - self.signal_pose(p, rot(-dw)@R)) / (2.0*dw)
         return g
     
 def joint_sigma(revolute_deg, prismatic_mm):#per joint error std for CoilArm
@@ -68,8 +68,11 @@ def joint_sigma(revolute_deg, prismatic_mm):#per joint error std for CoilArm
 def joint_gradient(placement, arm, q0):#dS/dq at q0 by the chain rule-->pose gradient times geometric Jacobian
     p,R = arm.coil_pose(q0)
     return placement.pose_gradient(p,R)@arm.jacobian(q0)
-#First order Jacobian estimate of std(S)/S0 for indep. joint errors
-#   sigma_q holds one std per joint
+#First order Jacobian estimate of std(S)/S0 for indep. joint errors (textbook)
+    #sigma_q holds one std per joint
+    #small joint error moves the pose by Jdelta(q) and the signal by g_pose*Jdelta(q), so g_q = g_poseJ
+    #sigma_S = sqrt(Sum_i(g_q,i * sigma_i)^2)
+    #sigma_s/S0 = |1/S0 * dS/dh|*sqrt(sigma_d1^2 + (r_s*sigma_theta3)^2 + (l2*sigma_theta4)^2) with r_s the horizontal distance to the coil
 def lin_rel_sig(placement, arm, q0, sigma_q):
     p,R=arm.coil_pose(q0)
     S0 = placement.signal_pose(p,R)
@@ -89,9 +92,9 @@ def monte_carlo_loss(placement, arm, q0, sigma_q, n_samples=2000, seed=0):
         if placement.collides(p,R):
             collisions += 1
             continue
-        losses.appened(1.0 - placement.signal_pose(p,R) / S0)
-        return np.array(losses), collisions
+        losses.append(1.0 - placement.signal_pose(p,R) / S0)
+    return np.array(losses), collisions
 
-                      
+                     
 
     

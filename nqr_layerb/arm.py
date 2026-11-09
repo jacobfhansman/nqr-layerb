@@ -78,7 +78,7 @@ Inverse kinematics (Jacobian psuedo inverse inverse-kinematics algorithm) used f
                                                                   [0,1,0]*R_e^T*Jo(q)) which drops the spin component and makes Jr(q) 5x5
 """
 import numpy as np
-from .frames import dh_transform, homogenous, rot_y, rot_x, rot_z
+from .frames import dh_transform, homogeneous, rot_y, rot_x, rot_z
 
 joints = "prrrr" #p = prismatic, r = revolute & in order of the arm's, used for jacobian
 l1,l2 = 0.260, 0.235
@@ -95,7 +95,7 @@ def wrap(angle): #wrap angles to [-pi,pi], ex. 350deg = -10deg
 class CoilArm:
     def __init__(self, l1=l1, l2=l2, base=(nombase_xpos, 0.0, 0.0), d1_range=(0.0,0.40)): #class storing 2 fixed ends of the arm and the dh table, d1_range used in IK
         self.l1, self.l2 = float(l1), float(l2)
-        self.T_b0 = homogenous(p=base) #frame 0 in the global frame b (sample frame b)
+        self.T_b0 = homogeneous(p=base) #frame 0 in the global frame b (sample frame b)
         self.d1_range = d1_range #arm joint 1 stroke in meters for IK flagging joint values that can't be reached
         self.R_5e = rot_y(-np.pi/2.0)#coil axis z_e = -x5, x_e = z5
 
@@ -155,13 +155,13 @@ class CoilArm:
         while np.linalg.norm(e) >= tol and N < max_iter:
             Jr = self.task_jacobian(q)
             #damped LS inv
-            q = q + Jr.T@np.linalg.norm.solve(Jr@Jr.T + k**2 * np.eye(5), e) #LS solve
+            q = q + Jr.T@np.linalg.solve(Jr@Jr.T + k**2 * np.eye(5), e) #LS solve
             e = self.task_error(q, p_d, a_d)
             N += 1
         q[1:] = wrap(q[1:]) #adj. angles
         info = dict(converged=bool(np.linalg.norm(e) < tol), #did IK solve
                                    iterations=N, #num of it to solve
                                    residual=float(np.linalg.norm(e)), #resid pose error
-                                   in_stroke=bool(self.dq_range[0] <= q[0] <= self.d1_range[1]), #solution in set d1 bounds?
+                                   in_stroke=bool(self.d1_range[0] <= q[0] <= self.d1_range[1]), #solution in set d1 bounds?
                                    sigma_min=float(np.linalg.svd(self.task_jacobian(q),compute_uv=False)[-1])) #near singularity?
         return q, info

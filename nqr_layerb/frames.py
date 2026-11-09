@@ -27,7 +27,7 @@ def rot_z(angle): #" " about global z-axis by 'angle' in rad
     c, s = np.cos(angle), np.sin(angle)
     return np.array([[c, -s, 0.0],[s,c, 0.0],[0.0,0.0,1.0]])
 
-def homogenous(R=None, p=(0.0,0.0,0.0)): #4x4 transform w rotation R (identity if no rotation) and translation p
+def homogeneous(R=None, p=(0.0,0.0,0.0)): #4x4 transform w rotation R (identity if no rotation) and translation p
     T = np.eye(4)
     T[:3,3] = p
     if R is not None:
@@ -43,13 +43,11 @@ def dh_transform(a, alpha, d, theta): #standard DH transform A=Rz(theta)Tz(d)Tx(
                      [0.0,0.0,0.0,1.0]])
 
 
-    
-
-""" #these were for when I was still doing a planar 3R arm. Don't think I'll need them anymore
+ #these were for when I was still doing a planar 3R arm. Don't think I'll need them anymore
+ #      --> Nevermind I'm still using them to map points in the signal model
 def coil_rotation(phi):
     return rot_y(np.pi / 2 - phi) #phi = -pi/2 points the coil axis straight down at the sample
 
 def to_coil_frame(points_global, position, R): #map global points (N,3) into the coil frame
     pts = np.atleast_2d(np.asarray(points_global, dtype=float))
     return (pts - np.asarray(position, dtype=float)) @ np.asarray(R, dtype=float)
-"""

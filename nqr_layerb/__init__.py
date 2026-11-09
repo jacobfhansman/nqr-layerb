@@ -14,3 +14,4 @@ from .signal_model import(powder_response, received_signal, signal_contributions
 from .sample import(VoxelSample)
 from .frames import(rot_y, rot_x, rot_z, coil_rotation, dh_transform, homogeneous, to_coil_frame)
 from .arm import (nombase_xpos, joints, l1, l2, q_guess, CoilArm, tilt_axis, wrap)
+from .tolerance import (Placement, joint_gradient, joint_sigma, lin_rel_sig, monte_carlo_loss)

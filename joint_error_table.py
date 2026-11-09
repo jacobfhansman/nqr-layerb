@@ -22,7 +22,6 @@ print("sigma_mm linear MC_std MC_mean MC_p95")
 for i, mm in enumerate([0.1, 0.5, 1.0, 1.5]):#d1 errors
     s = joint_sigma(0.0,mm)
     lin = lin_rel_sig(P, arm, q0, s)
-    L, _ = monte_carlo_loss(P, arm, q0, s, n_samples=5000, seed=10+i)
+    L, _ = monte_carlo_loss(P, arm, q0, s, n_samples=2000, seed=10+i)
     print(f"{mm:8.1f} {lin:6.4f} {L.std(ddof=1):6.4f} {L.mean():7.4f} {np.percentile(L, 95):6.4f}")
-
 

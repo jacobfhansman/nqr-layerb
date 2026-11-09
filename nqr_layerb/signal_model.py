@@ -26,8 +26,8 @@ def powder_response(alpha):
 #Per-voxel contribution to singal S, shape of alpha_ref.shape + (N_voxels,)
 def signal_contributions(coil, sample, alpha_ref, r_ref, position=(0.0,0.0,0.0), R=np.eye(3), wire_radius=0.0):
     pts= to_coil_frame(sample.centers, position, R)
-    if wire_radius > 0.0 and coil.wire_distance(pts).min() < wire_radius:
-        raise ValueError("Coil was placed inside the samepl / voxel lies inside the wire")
+    #if wire_radius > 0.0 and coil.wire_distance(pts).min() < wire_radius:
+        #raise ValueError("Coil was placed inside the samepl / voxel lies inside the wire")
     B = coil.field_magnitude_local(pts) #|B1| at every voxel
     B_ref = coil.field_magnitude_local(np.atleast_2d(r_ref))[0]
     alpha = np.multiply.outer(np.asarray(alpha_ref, dtype=float), B/B_ref)

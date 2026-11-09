@@ -9,23 +9,24 @@ Sample's top face will sit at z=0 and its depth will extend below. Coil will sit
 import numpy as np
 
 class VoxelSample:
-    def __init__(self, centers, dV, density=None):
+    def __init__(self, centers, dV, density=None, top=None):
         self.centers = np.atleast_2d(np.asarray(centers, dtype=float))
         self.dV = float(dV)
         n = len(self.centers)
-        self.density = np.ones(n) if density is None else np.broadcast_to(np.asarray(density, dtype=float), (n,)).copy() #broadcast_to() lets the voxel density be either
-    def __len__(self):                                                                                                   #one number / value per voxel. Use .copy() for any later edit
+        self.density = np.ones(n) if density is None else np.broadcast_to(np.asarray(density, dtype=float), (n,)).copy() #broadcast_to() lets the voxel density be either one number / value per voxel. Use .copy() for any later edit
+        self.top = float(top) if top is not None else float(self.centers[:,2].max()+0.5*self.dV**(1.0/3.0)) #highest voxel center plus half voxel edge
+    def __len__(self):                                                                                                   
         return len(self.centers)
     @property
     def volume(self):
         return self.dV*len(self)
     @classmethod
-    #Uniform slab sample with its top face at z=0, extending down to z=-depth
-    def slab(cls, size_x, size_y, depth, voxel, center_xy=(0.0,0.0)):
+    #Uniform slab sample. z_top = depth puts slab on table at z=0
+    def slab(cls, size_x, size_y, depth, voxel, center_xy=(0.0,0.0), z_top=0.0):
         nx,ny,nz = (int(round(s/voxel)) for s in (size_x, size_y, depth))
         x = center_xy[0] - size_x / 2 + (np.arange(nx) + 0.5) * voxel
         y = center_xy[1] - size_y / 2 + (np.arange(ny) + 0.5) * voxel
-        z = -(np.arange(nz) + 0.5)*voxel
+        z = z_top - (np.arange(nz) + 0.5)*voxel
         X, Y, Z = np.meshgrid(x,y,z,indexing="ij")
         centers = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
         return cls(centers, voxel**3)
