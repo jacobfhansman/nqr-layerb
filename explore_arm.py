@@ -48,7 +48,7 @@ ink, muted, light, red, amber, ring = "#0b0b0b","#52514e","#c3c2b7","#d03b3b","#
 jointcolors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"] #d1,theta2,theta3,theta4,theta5
 jointnames = ["d1","theta2","theta3","theta4","theta5"]
 
-fk_sliders = [("d1 (mm)", deg, -30.0,30.0), ("theta2 (deg)", deg, -90.0,0.0), ("theta3 (deg)", deg, 45.-0, 180.0), ("theta4 (deg)", deg, 45.0, 180.0), ("theta5 (deg)", deg, -60.0, 60.0)]
+fk_sliders = [("d1 (mm)", deg, -30.0,30.0), ("theta2 (deg)", deg, -90.0,90.0), ("theta3 (deg)", deg, -45.0, 180.0), ("theta4 (deg)", deg, 45.0, 180.0), ("theta5 (deg)", deg, -60.0, 60.0)]
 ik_sliders = [("x (mm)", 1e-3, -100.0,100.0), ("y (mm)", 1e-3, -100.0, 100.0), ("z (mm)", 1e-3, 50.0,200.0), ("tilt psi (deg)", deg, 0.0,60.0), ("toward phi (deg)", deg, -180.0, 180.0)]
 
 def pose_of(q): #ik sliders five numbers for joint vector q; coil center x,y,z and axis tilt psi, phi
@@ -60,7 +60,7 @@ def frame_with_axis(a): #rotation matrix w/ z column is a; i.e. spin about coil 
     x = np.cross([0.0,1.0,0.0],a)
     if np.linalg.norm(x) < 1e-9:
         x = np.array([1.0,0.0,0.0])
-    x = x / np.linalgnorm(x)
+    x = x / np.linalg.norm(x)
     return np.column_stack([x, np.cross(a,x),a])
 
 def evaluate(q): #everything the display will need for one joint vector q
@@ -86,6 +86,7 @@ def plan_move(q_start, pf, af): #see above comment block for details on trajecto
     s = 3*tau**2 - 2*tau**3#cubic timing law
     sdot = (6*tau - 6*tau**2) / t_move
     r = np.cross(ai,af)
+    r = r / np.linalg.norm(r) if np.linalg.norm(r) > 1e-12 else np.zeros(3)
     angle = np.arctan2(np.linalg.norm(r), ai@af)
     q,qs,qdots =np.array(q_start, dtype=float), [],[]
     for k in range(n_frames):
@@ -99,7 +100,7 @@ def plan_move(q_start, pf, af): #see above comment block for details on trajecto
         xdot = np.r_[sdot[k]*(pf-pi), (R.T@(sdot[k]*angle*r))[:2]]
         qdots.append(np.linalg.solve(arm.task_jacobian(q), xdot))
         qs.append(q)
-        return dict(t=t, q=np.array(qs), qdot=np.array(qdots), ev=[evaluate(q) for q in qs]), None
+    return dict(t=t, q=np.array(qs), qdot=np.array(qdots), ev=[evaluate(q) for q in qs]), None
     
 def fit_y(ax, y, min_span):#Set sensible y limits on the plot and no rounding noise
     lo,hi = np.nanmin(y), np.nanmax(y)
@@ -118,7 +119,7 @@ class Explorer: #build the window
         self.draw_scene()
         self.ax_S = self.fig.add_axes([0.64, 0.80, 0.33, 0.15])#signal
         self.ax_d1 = self.fig.add_axes([0.64, 0.30, 0.13, 0.15])
-        self.ax_d1dot = self.fig.add_axes([0.64,0.30,0.13,0.15])
+        self.ax_d1dot = self.fig.add_axes([0.64,0.52 ,0.13,0.15])
         self.ax_th = self.fig.add_axes([0.84, 0.52, 0.13, 0.15])
         self.ax_thdot = self.fig.add_axes([0.84, 0.30, 0.13, 0.15])
         handles = [plt.Line2D([], [], color=c, lw=2) for c in jointcolors]
@@ -132,7 +133,7 @@ class Explorer: #build the window
         self.fk = [self.make_slider(0.27, k, spec, q0[k], self.on_fk) for k, spec in enumerate(fk_sliders)]
         self.ik = [self.make_slider(0.58, k, spec, v, self.on_ik) for k, (spec, v) in enumerate(zip(ik_sliders, [*pose_of(q0)[:4],0.0]))]
         self.radio = RadioButtons(self.fig.add_axes([0.01,0.11,0.15,0.10]),["Joint sliders (fwd kin)", "Coil pose sliders (inv kin)"])
-        self.radio.on_clicked(lambda event: self.move())
+        self.radio.on_clicked(self.set_mode)
         self.move_button = Button(self.fig.add_axes([0.01,0.03,0.07,0.05]), "Move")
         self.move_button.on_clicked(lambda event: self.move())
         self.reset_button = Button(self.fig.add_axes([0.09, 0.03, 0.07, 0.05]), "Reset")
@@ -159,19 +160,19 @@ class Explorer: #build the window
             ax.plot([lo[0], hi[0], hi[0], lo[0], lo[0]], [lo[1], lo[1], hi[1], hi[1], lo[1]], [z]*5, color=muted, lw=1)
         for x,y in [(lo[0], lo[1]), (hi[0], lo[1]), (hi[0], hi[1]), (lo[0], hi[1])]:
             ax.plot([x,x], [y,y], [lo[2], hi[2]], color=muted, lw=1)
-            (self.column, ) = ax.plot([], [], [], color=muted, lw=6)
-            (self.links, ) = ax.plot([], [], [], "-o", color=ink, lw=3, ms=5)
-            (self.ring, ) = ax.plot([], [], [], "--", color=muted, lw=1.5)
-            (self.target_ring, ) = ax.plot([],[],[],"--",color=muted, lw=1.5)
-            ax.set_xlim(-0.45, 0.12)
-            ax.set_ylim(-0.20, 0.20)
-            ax.set_zlim(0.0, 0.35)
-            ax.set_proj_type("ortho")#no perspective
-            ax.set_box_aspect((0.57, 0.40, 0.35), zoom=1.2)
-            ax.set_xlabel("x (m)")
-            ax.set_ylabel("y (m)")
-            ax.set_zlabel("z (m)")
-            ax.view_init(elev=22, azim=-60)
+        (self.column, ) = ax.plot([], [], [], color=muted, lw=6)
+        (self.links, ) = ax.plot([], [], [], "-o", color=ink, lw=3, ms=5)
+        (self.ring, ) = ax.plot([], [], [], color=ring, lw=1.5)
+        (self.target_ring, ) = ax.plot([],[],[],"--",color=muted, lw=1.5)
+        ax.set_xlim(-0.45, 0.12)
+        ax.set_ylim(-0.20, 0.20)
+        ax.set_zlim(0.0, 0.35)
+        ax.set_proj_type("ortho")#no perspective
+        ax.set_box_aspect((0.57, 0.40, 0.35), zoom=1.2)
+        ax.set_xlabel("x (m)")
+        ax.set_ylabel("y (m)")
+        ax.set_zlabel("z (m)")
+        ax.view_init(elev=22, azim=-60)
 
     def slider_values(self, sliders, specs):
         return np.array([s.val*spec[1] for s, spec in zip(sliders, specs)])
@@ -208,7 +209,7 @@ class Explorer: #build the window
 
     def on_fk(self):#reads joint sliders into self.q to do fwd kin
         if self.busy or self.mode != "fk": return
-        self.q = self.slider_values(self,fk, fk_sliders)
+        self.q = self.slider_values(self.fk, fk_sliders)
         self.redraw()
     def on_ik(self):#updates target and preview
         if self.busy or self.mode != "ik" : return
@@ -230,11 +231,12 @@ class Explorer: #build the window
             return
         plan, t_fail = plan_move(self.q, *self.target)
         if plan is None:
-            self.message = f"Inv. Kin. fails {t_fail:2f}s into the straight path for given move"
+            self.message = f"Inv. Kin. fails {t_fail:.2f}s into the straight path for given move"
             self.redraw()
+            return
         self.start_plan(plan)
         if not save_gif:
-            self.timer = self.fig.canvas.new_timer(interval=int(1000*t_move/(n_frame-1)))#timer for every 50ms for real time animation
+            self.timer = self.fig.canvas.new_timer(interval=int(1000*t_move/(n_frames-1)))#timer for every 50ms for real time animation
             self.timer.add_callback(self.step)
             self.timer.start()
     def start_plan(self, plan):
@@ -244,7 +246,7 @@ class Explorer: #build the window
 
     def step(self):#show the next frame of the planned move, called by timer
         k = self.frame
-        self.q = self.plan["q"[k]]
+        self.q = self.plan["q"][k]
         for line in self.cursors: line.set_xdata([self.plan["t"][k]]*2)
         self.frame += 1
         if self.frame >= n_frames:
@@ -274,7 +276,7 @@ class Explorer: #build the window
         for ax in axes:
             ax.clear()
             ax.set_axis_on()
-        self.ax_S.plot(t, S, colo=ink, lw=2)
+        self.ax_S.plot(t, S, color=ink, lw=2)
         for k in np.flatnonzero(hit):#shade the frames where the coil hits the sample
             self.ax_S.axvspan(t[k]-0.025, t[k]+0.025, color="#f6d2d2", lw=0)
         if hit.any():
@@ -289,12 +291,12 @@ class Explorer: #build the window
         for i in range(1,5):
             self.ax_th.plot(t, np.degrees(q[:,i]), color=jointcolors[i], lw=2)
             self.ax_thdot.plot(t, np.degrees(qd[:,i]),color=jointcolors[i],lw=2)
-            self.ax_th.set_title("theta2 to theta5 (deg)", fontsize=9)
-            self.ax_thdot.set_title("theta2 to theta5 rates (deg/s)", fontsize=9)
-            fit_y(self.ax_d1, q[:,0]*1e3,10.0)
-            fit_y(self.ax_d1dot, qd[:,0]*1e3, 10.0)
-            fit_y(self.ax_th, np.degrees(q[:,1:]),10.0)
-            fit_y(self.ax_thdot, np.degrees(qd[:,1:]), 10.0)
+        self.ax_th.set_title("theta2 to theta5 (deg)", fontsize=9)
+        self.ax_thdot.set_title("theta2 to theta5 rates (deg/s)", fontsize=9)
+        fit_y(self.ax_d1, q[:,0]*1e3,10.0)
+        fit_y(self.ax_d1dot, qd[:,0]*1e3, 10.0)
+        fit_y(self.ax_th, np.degrees(q[:,1:]),10.0)
+        fit_y(self.ax_thdot, np.degrees(qd[:,1:]), 10.0)
         for ax in axes:
             ax.tick_params(labelsize=8)
             ax.grid(color="#e8e7e2", lw=0.6)
@@ -355,21 +357,21 @@ class Explorer: #build the window
             ring_t = np.vstack([ring_t, ring_t[:1]])
             self.target_ring.set_data_3d(ring_t[:,0],ring_t[:,1], ring_t[:,2])
             if et is None:
-                warnings.eppend(f"Target unreachable! Inv. kin. did not converge (residual {info['residual']:.2g})")
+                warnings.append(f"Target unreachable! Inv. kin. did not converge (residual {info['residual']:.2g})")
             else:
                 if not info["in_stroke"]:
-                    warnings.append(f"Target outside stroke, needs d1={qt[0]*1e3:0.f}mm (stroke 0 to 400mm)")
+                    warnings.append(f"Target outside stroke, needs d1={qt[0]*1e3:.0f}mm (stroke 0 to 400mm)")
                 if et["hit"]: warnings.append("Coil would hit the sample!")
                 if et["low"] < 0.0: warnings.append("Arm would go below the table top!")
                 if et["sigma"] < near_singular: cautions.append(f"Caution, target near a singularity! Sigma_min = {et['sigma']:.3f}")
                 if info["in_stroke"] and not et["hit"]: note = (f"Target reachable in {info['iterations']} IK iterations, " f"S/S0 = {et['S']:.3f} there. Press Move!")
-                bad = et is None or not info["in_stroke"]
-                self.target_ring.set_color(red if bad else muted)
+            bad = et is None or not info["in_stroke"]
+            self.target_ring.set_color(red if bad else muted)
         if self.message:
             warnings.append(self.message.upper())
-            self.warn.set_text("\n".join(warnings))
-            self.caution.set_text("\n" * len(warnings) + "\n".join(cautions))#starts below red lines
-            self.note.set_text(note)
+        self.warn.set_text("\n".join(warnings))
+        self.caution.set_text("\n" * len(warnings) + "\n".join(cautions))#starts below red lines
+        self.note.set_text(note)
         
         q=e["q"]
         S_text = " hit " if e["hit"] else f"{e['S']:6.3f}"
