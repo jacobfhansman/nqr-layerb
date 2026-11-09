@@ -113,10 +113,10 @@ def enable(slider, on):#grey out section of sliders thats not enabled
 
 class Explorer: #build the window
     def __init__(self):
-        self.fig = plt.figure(figzise=(13,8))
+        self.fig = plt.figure(figsize=(13,8))
         self.ax = self.fig.add_axes([0.0,0.27,0.58,0.7], projection="3d")
         self.draw_scene()
-        self.ax_S = self.fid.add_axes([0.64, 0.80, 0.33, 0.15])#signal
+        self.ax_S = self.fig.add_axes([0.64, 0.80, 0.33, 0.15])#signal
         self.ax_d1 = self.fig.add_axes([0.64, 0.30, 0.13, 0.15])
         self.ax_d1dot = self.fig.add_axes([0.64,0.30,0.13,0.15])
         self.ax_th = self.fig.add_axes([0.84, 0.52, 0.13, 0.15])
@@ -131,9 +131,12 @@ class Explorer: #build the window
         self.fig.text(0.47, 0.245, "Coil pose target (inv kin)", fontsize=10, weight="bold")
         self.fk = [self.make_slider(0.27, k, spec, q0[k], self.on_fk) for k, spec in enumerate(fk_sliders)]
         self.ik = [self.make_slider(0.58, k, spec, v, self.on_ik) for k, (spec, v) in enumerate(zip(ik_sliders, [*pose_of(q0)[:4],0.0]))]
-        self.radio = RadioButtons(self.fig.add_axes9([0.01,0.11,0.15,0.10]),["Joint sliders (fwd kin)", "Coil pose sliders (inv kin)"])
+        self.radio = RadioButtons(self.fig.add_axes([0.01,0.11,0.15,0.10]),["Joint sliders (fwd kin)", "Coil pose sliders (inv kin)"])
         self.radio.on_clicked(lambda event: self.move())
-        self.reset_botton.on_clicked(lambda event: self.reset())
+        self.move_button = Button(self.fig.add_axes([0.01,0.03,0.07,0.05]), "Move")
+        self.move_button.on_clicked(lambda event: self.move())
+        self.reset_button = Button(self.fig.add_axes([0.09, 0.03, 0.07, 0.05]), "Reset")
+        self.reset_button.on_clicked(lambda event: self.reset())
         self.q = q0.copy() #joints the arm is drawn at
         self.busy=False #set to True when the code itself moves sliders from inv kin
         self.history = [] #S/S0 after each FK slider change
@@ -141,11 +144,11 @@ class Explorer: #build the window
         self.timer = None
         self.frame = 0
         self.message = "" 
-        self.set_mode("Joint sliders (inv kin)")
+        self.set_mode("Joint sliders (fwd kin)")
 
     def make_slider(self, x, k, spec, value_si, callback):
         label, scale, lo, hi = spec
-        s = Slider(self.fig.add_axes([x, 0.20 - 0.042*k, 0.12, 0.025]), label, lo, hi, valint=value_si/scale)
+        s = Slider(self.fig.add_axes([x, 0.20 - 0.042*k, 0.12, 0.025]), label, lo, hi, valinit=value_si/scale)
         s.on_changed(lambda val: callback())
         return s
     
@@ -159,6 +162,7 @@ class Explorer: #build the window
             (self.column, ) = ax.plot([], [], [], color=muted, lw=6)
             (self.links, ) = ax.plot([], [], [], "-o", color=ink, lw=3, ms=5)
             (self.ring, ) = ax.plot([], [], [], "--", color=muted, lw=1.5)
+            (self.target_ring, ) = ax.plot([],[],[],"--",color=muted, lw=1.5)
             ax.set_xlim(-0.45, 0.12)
             ax.set_ylim(-0.20, 0.20)
             ax.set_zlim(0.0, 0.35)
@@ -171,7 +175,7 @@ class Explorer: #build the window
 
     def slider_values(self, sliders, specs):
         return np.array([s.val*spec[1] for s, spec in zip(sliders, specs)])
-    def set_sliders(self, sldiers, specs, values):
+    def set_sliders(self, sliders, specs, values):
         self.busy=True
         for s, spec, v in zip(sliders, specs, values):
             s.set_val(v/spec[1])
@@ -361,7 +365,7 @@ class Explorer: #build the window
                 if info["in_stroke"] and not et["hit"]: note = (f"Target reachable in {info['iterations']} IK iterations, " f"S/S0 = {et['S']:.3f} there. Press Move!")
                 bad = et is None or not info["in_stroke"]
                 self.target_ring.set_color(red if bad else muted)
-        if self.messages:
+        if self.message:
             warnings.append(self.message.upper())
             self.warn.set_text("\n".join(warnings))
             self.caution.set_text("\n" * len(warnings) + "\n".join(cautions))#starts below red lines
@@ -374,7 +378,7 @@ class Explorer: #build the window
                              f"tilt      {e['tilt']:6.1f} deg\n"
                              f"sigma_min {e['sigma']:6.3f}\n"
                              f"d1        {q[0] * 1e3:6.1f} mm\n"
-                             + "".join(f"{n:<9} {np.degrees(v):6.1f} deg\n" for n, v in zip(JOINT_NAMES[1:], q[1:])))
+                             + "".join(f"{n:<9} {np.degrees(v):6.1f} deg\n" for n, v in zip(jointnames[1:], q[1:])))
         self.fig.canvas.draw_idle()
 
 def scripted_moves():#Ik targets (x,y,z in mm and psi,phi in deg) for the GIF, third tilts coil into sample
