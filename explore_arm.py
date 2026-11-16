@@ -48,7 +48,7 @@ ink, muted, light, red, amber, ring = "#0b0b0b","#52514e","#c3c2b7","#d03b3b","#
 jointcolors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"] #d1,theta2,theta3,theta4,theta5
 jointnames = ["d1","theta2","theta3","theta4","theta5"]
 
-fk_sliders = [("d1 (mm)", deg, -30.0,30.0), ("theta2 (deg)", deg, -90.0,90.0), ("theta3 (deg)", deg, -45.0, 180.0), ("theta4 (deg)", deg, 45.0, 180.0), ("theta5 (deg)", deg, -60.0, 60.0)]
+fk_sliders = [("d1 (mm)", 1e-3, 0.0,400.0), ("theta2 (deg)", deg, -90.0,90.0), ("theta3 (deg)", deg, -45.0, 180.0), ("theta4 (deg)", deg, 45.0, 180.0), ("theta5 (deg)", deg, -60.0, 60.0)]
 ik_sliders = [("x (mm)", 1e-3, -100.0,100.0), ("y (mm)", 1e-3, -100.0, 100.0), ("z (mm)", 1e-3, 50.0,200.0), ("tilt psi (deg)", deg, 0.0,60.0), ("toward phi (deg)", deg, -180.0, 180.0)]
 
 def pose_of(q): #ik sliders five numbers for joint vector q; coil center x,y,z and axis tilt psi, phi
@@ -86,8 +86,8 @@ def plan_move(q_start, pf, af): #see above comment block for details on trajecto
     s = 3*tau**2 - 2*tau**3#cubic timing law
     sdot = (6*tau - 6*tau**2) / t_move
     r = np.cross(ai,af)
-    r = r / np.linalg.norm(r) if np.linalg.norm(r) > 1e-12 else np.zeros(3)
     angle = np.arctan2(np.linalg.norm(r), ai@af)
+    r = r / np.linalg.norm(r) if np.linalg.norm(r) > 1e-12 else np.zeros(3)
     q,qs,qdots =np.array(q_start, dtype=float), [],[]
     for k in range(n_frames):
         pk = pi + s[k]*(pf-pi) #path primitive segment
@@ -232,6 +232,12 @@ class Explorer: #build the window
         plan, t_fail = plan_move(self.q, *self.target)
         if plan is None:
             self.message = f"Inv. Kin. fails {t_fail:.2f}s into the straight path for given move"
+            self.redraw()
+            return
+        low = [e["low"] for e in plan["ev"]]
+        if min(low) < 0.0:
+            k = int(np.argmin(low))
+            self.message = f"Requested move places the arm {-low[k]*1e3:0.f}mm below the table at {plan['t'][k]:.2f}s" #Don't let the arm go under the table. Maybe remove later if too restrictive
             self.redraw()
             return
         self.start_plan(plan)

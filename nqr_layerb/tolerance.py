@@ -30,7 +30,7 @@ class Placement: #see above comment block for description
     
     def signal(self, x, h, psi):#see comment block above
         R = coil_rotation(psi - np.pi/2.0)
-        return self.signal_pose((x,0.0,self.top+h))
+        return self.signal_pose((x,0.0,self.top+h),R)
     
     def clearance(self, h, psi):#height of lowest point of a coil's wire above the top face
         return h -self.coil.radius * np.abs(np.sin(psi))
