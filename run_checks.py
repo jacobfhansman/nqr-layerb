@@ -37,6 +37,18 @@ def main():
     print("Running checks")
     #Returned 0 means pass every test, anything else returned means something failed
     result = subprocess.run([py, "-m", "pytest", "-v"], cwd=root)
+
+    flags = sys.argv[1:]
+    extras = [("--figures", ["make_figures.py"], "Generating report figures into figures/"), ("--save-gif", ["explore_arm.py", "--save-gif"], "Writing figures/arm_sweep.gif"), ("--explore", ["explore_arm.py"], "Opening the arm explorer (close the window to finish)")]
+    for flag, script, message in extras:
+        if flag not in flags:
+            continue
+        if result.returncode != 0:
+            print(f"Test failed, skipping {flag}")
+            continue
+        print(message)
+        subprocess.run([py, str(root/script[0]), *script[1:]], cwd=root, check=True)
+    
     sys.exit(result.returncode)
 
 if __name__ == "__main__":

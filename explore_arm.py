@@ -118,8 +118,8 @@ class Explorer: #build the window
         self.ax = self.fig.add_axes([0.0,0.27,0.58,0.7], projection="3d")
         self.draw_scene()
         self.ax_S = self.fig.add_axes([0.64, 0.80, 0.33, 0.15])#signal
-        self.ax_d1 = self.fig.add_axes([0.64, 0.30, 0.13, 0.15])
-        self.ax_d1dot = self.fig.add_axes([0.64,0.52 ,0.13,0.15])
+        self.ax_d1 = self.fig.add_axes([0.64, 0.52, 0.13, 0.15])
+        self.ax_d1dot = self.fig.add_axes([0.64,0.30 ,0.13,0.15])
         self.ax_th = self.fig.add_axes([0.84, 0.52, 0.13, 0.15])
         self.ax_thdot = self.fig.add_axes([0.84, 0.30, 0.13, 0.15])
         handles = [plt.Line2D([], [], color=c, lw=2) for c in jointcolors]
@@ -128,20 +128,20 @@ class Explorer: #build the window
         self.warn = self.fig.text(0.02, 0.935, "", color=red, fontsize=10, weight="bold", va="top")
         self.caution = self.fig.text(0.02, 0.935, "", color=amber, fontsize=10, weight="bold", va="top")
         self.status = self.fig.text(0.78, 0.02, "", family="monospace", fontsize=9, va="bottom")
-        self.fig.text(0.18,0.245, "Joints (fwd kin)", fontsize=10, weight="bold")
-        self.fig.text(0.47, 0.245, "Coil pose target (inv kin)", fontsize=10, weight="bold")
-        self.fk = [self.make_slider(0.27, k, spec, q0[k], self.on_fk) for k, spec in enumerate(fk_sliders)]
+        self.fig.text(0.31,0.245, "Joints (fwd kin)", fontsize=10, weight="bold")
+        self.fig.text(0.56, 0.245, "Coil pose target (inv kin)", fontsize=10, weight="bold")
+        self.fk = [self.make_slider(0.30, k, spec, q0[k], self.on_fk) for k, spec in enumerate(fk_sliders)]
         self.ik = [self.make_slider(0.58, k, spec, v, self.on_ik) for k, (spec, v) in enumerate(zip(ik_sliders, [*pose_of(q0)[:4],0.0]))]
-        self.radio = RadioButtons(self.fig.add_axes([0.01,0.11,0.15,0.10]),["Joint sliders (fwd kin)", "Coil pose sliders (inv kin)"])
+        self.radio = RadioButtons(self.fig.add_axes([0.005,0.11,0.19,0.10]),["Joint sliders (fwd kin)", "Coil pose sliders (inv kin)"])
         self.radio.on_clicked(self.set_mode)
-        self.move_button = Button(self.fig.add_axes([0.01,0.03,0.07,0.05]), "Move")
+        self.move_button = Button(self.fig.add_axes([0.005,0.03,0.07,0.05]), "Move")
         self.move_button.on_clicked(lambda event: self.move())
         self.reset_button = Button(self.fig.add_axes([0.09, 0.03, 0.07, 0.05]), "Reset")
         self.reset_button.on_clicked(lambda event: self.reset())
         self.q = q0.copy() #joints the arm is drawn at
         self.busy=False #set to True when the code itself moves sliders from inv kin
-        self.history = [] #S/S0 after each FK slider change
-        self.plan = self.cursors = None # the last planned move & time markers
+        self.history = [] #S/S0 after each FK slider chan28
+        self.plan = self.cursors = None #the last planned move & time markers
         self.timer = None
         self.frame = 0
         self.message = "" 
@@ -394,6 +394,7 @@ def scripted_moves():#Ik targets (x,y,z in mm and psi,phi in deg) for the GIF, t
 
 def main():
     ex = Explorer()
+    ex.fig.canvas.manager.set_window_title("Arm-Mounted NQR Coil")
     if not save_gif:
         plt.show()
         return
