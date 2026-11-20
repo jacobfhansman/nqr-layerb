@@ -1,16 +1,25 @@
-# nqr-layerb: Pose-Dependent Signal Model for an Arm-Mounted NQR Coil
+# nqr-layerb: Pose-Dependent Signal Model for an Arm-Mounted Nuclear Quadrupole Resonance (NQR) Sensing Coil
 
 ASU MAE547 open project, J.F. Hansman
 
-Computes coil fields, flip-angle maps, and relative NQR signal for a coil at a given pose over a simplified sample
+Computes coil fields, flip-angle maps, and relative NQR signal for a coil at a given pose over a simplified sample. Also includes an interactive matplotlib viewer to display the 5-joint arm and simplified NQR signal reception for an arm-mounted NQR coil over top a flat slab sample.
 
 ## To Run Everything:
 - Requires Python 3.11 or newer and an internet connection on the first run
 - /cd to clone directory
+- To generate analysis figures:
   ```
-  python run_checks.py
+  python run_checks.py --figures
   ```
-This creates a private environment in '.venv' inside this folder, installs the pinned packages from 'requirements.txt' into it, and runs all tests. Your own Python installation is not modified.
+- To investigate the behavior of an arm-mounted NQR coil:
+  ```
+  python run_checks.py --explore
+  ```
+- To save a .gif of the interactive matplotlib arm viewer:
+  ```
+  python run_checks.py --save-gif
+  ```
+This creates a private virtual environment in '.venv' inside this folder, installs the pinned packages from 'requirements.txt' into it, runs all tests, and either saves figures, a gif, or opens the interactive viewer. Your own Python installation is not modified.
 
 ## Verification status:
 | Check                                        | Measured  | Limit   | Result   | Note    |

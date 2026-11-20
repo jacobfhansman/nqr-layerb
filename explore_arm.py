@@ -119,9 +119,9 @@ class Explorer: #build the window
         self.draw_scene()
         self.ax_S = self.fig.add_axes([0.64, 0.80, 0.33, 0.15])#signal
         self.ax_d1 = self.fig.add_axes([0.64, 0.52, 0.13, 0.15])
-        self.ax_d1dot = self.fig.add_axes([0.64,0.30 ,0.13,0.15])
+        self.ax_d1dot = self.fig.add_axes([0.64,0.31 ,0.13,0.15])
         self.ax_th = self.fig.add_axes([0.84, 0.52, 0.13, 0.15])
-        self.ax_thdot = self.fig.add_axes([0.84, 0.30, 0.13, 0.15])
+        self.ax_thdot = self.fig.add_axes([0.84, 0.31, 0.13, 0.15])
         handles = [plt.Line2D([], [], color=c, lw=2) for c in jointcolors]
         self.fig.legend(handles, jointnames, loc="center", bbox_to_anchor=(0.805, 0.725), ncol=5, frameon=False, fontsize=8, handlelength=1.5)
         self.note = self.fig.text(0.02, 0.965, "", color=ink, fontsize=9, va="top")
